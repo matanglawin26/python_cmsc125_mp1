@@ -1,7 +1,6 @@
 from random import randint, sample, random
 from time import sleep
 from os import system
-from termcolor import cprint
 
 class Resource:
     def __init__(self, id, time):
@@ -69,7 +68,7 @@ class Queue:
         else: # If no users are in queue
             for (_, res) in process.items():
                 if curr_res.id == res.id:
-                    time_left += res.time()
+                    time_left += res.time();
         
         self.__queue[curr_res.id].append({curr_user: Resource(curr_res.id, time_left)})
     
@@ -80,18 +79,18 @@ class Queue:
             if first_item_key.id == curr_user.id:
                 self.__queue[req_id] = self.__queue[req_id][1:]
         
-    def update(self, curr_res):
-        curr_queue = self.__queue[curr_res.id]
-        if len(curr_queue):
-            for item in curr_queue:
-                (_, req), = item.items()
-                # if req.time() > 0:
-                req.decrement()
+    def update(self):
+        for (_, items) in self.__queue.items():
+            for item in items:
+                (_, item_value), = item.items()
+                # if item_value.time() > 0:
+                item_value.decrement()
 
-    def last_queue(self, res_id):
+    def last_queue(self, res_id = None):
         if len(self.__queue[res_id]) == 0:
             return None
-        return self.__queue[res_id][-1]
+        if res_id is not None:
+            return self.__queue[res_id][-1]
     
     def in_queue(self, curr_user):
         for (_,user_list) in self.__queue.items():   
@@ -122,22 +121,12 @@ class Simulation:
         for user in users:
             if not user.is_complete():
                 curr_user_req = user.curr_req()
-                # if not self.in_process(curr_user_req, user):                     
-                #     if self.is_next(curr_user_req.id, user):
-                #         self.delete(curr_user_req.id, user)
-                #         self.add_process(user, curr_user_req)
-                # elif not self.__queue.in_queue(user):
-                #     self.add_queue(curr_user_req, user)    
-                if self.req_in_process(curr_user_req):
-                    if self.user_in_process(user):
-                        continue
-                    
-                    if not self.__queue.in_queue(user):
-                        self.add_queue(curr_user_req, user) 
-                else:
-                    if self.is_next(curr_user_req.id, user): 
+                if not self.in_process(curr_user_req,user):                     
+                    if self.is_next(curr_user_req.id, user):
                         self.delete(curr_user_req.id, user)
                         self.add_process(user, curr_user_req)
+                elif not self.__queue.in_queue(user):
+                    self.add_queue(curr_user_req, user)     
     
     def time(self):
         return self.__clock
@@ -161,23 +150,14 @@ class Simulation:
     def add_queue(self, curr_res, curr_user):
         self.__queue.enqueue(self.__process, curr_res, curr_user)
     
-    def update_queue(self, curr_res):
-        self.__queue.update(curr_res)
+    def update_queue(self):
+        self.__queue.update()
     
     def add_process(self, curr_user, req_id):
-        self.__process[curr_user.id] = req_id
+        self.__process[curr_user] = req_id
         
-    def user_in_process(self, curr_user):
-        return curr_user.id in self.__process        
-    
-    def req_in_process(self, curr_req):
-        for req in self.__process.values():
-            if req.id == curr_req.id:
-                return True
-        # res = any(1 if curr_req.id == req.id and curr_user.id != user_id else 0 for (user_id,req) in self.__process.items())
-        # print("IN PROCESS??",res)
-        # return res
-        return False
+    def in_process(self, curr_req, curr_user):
+        return any(1 if curr_req.id == req.id and curr_user.id != user.id else 0 for (user,req) in self.__process.items())
     
     def remove(self, curr_user):
         self.__process.pop(curr_user)
@@ -194,12 +174,10 @@ class Simulation:
 
     def status(self):
         length = 30
-        cprint("TIME ELAPSED: %ds\n" % self.time(), "light_green" )        
+        print("TIME ELAPSED: %ds\n" % self.time())        
         print("\n"+ length * "=" + " CURRENT PROCESSES " + length * "=") 
         for user in self.__users:
-            cprint("User %d (U%d) Requests:" % (user.id, user.id), "light_cyan")
-            print(' --- '.join(user.show_req()).ljust(10))
-            print()
+            print("User %d (U%d) Requests:\n%s\n" % (user.id, user.id, ' --- '.join(user.show_req()).ljust(10) if len(user.req_list()) > 0 else 'No Requests Left!'))
         
         print(length * "=" + " QUEUE/IN WAITING " + length * "=") 
         
@@ -209,7 +187,7 @@ class Simulation:
             
         for (res_id, user_list) in self.queue().items():
             if len(user_list) > 0:
-                cprint("Resource %d (R%d):" % (res_id, res_id), "light_yellow")
+                print("Resource %d (R%d):" % (res_id, res_id))
                 for item in user_list:
                     (user, res), = item.items()
                     print("\tUser %d (Time Left: %ds)" % (user.id, res.time()))
@@ -238,16 +216,7 @@ def user_array(user_list, res):
         req_num = int(random() * len(res)) + 1
         req_list = list(map(lambda x: Resource(x,int(random() * 10) + 1),unique_list(req_num, res)))
         
-        user.res_request(req_list)
-    
-    # users[0].res_request([Resource(7,5), Resource(26,5), Resource(27,6)])
-    # users[1].res_request([Resource(4,10), Resource(7,9), Resource(10,8), Resource(11,9)])
-    # users[2].res_request([Resource(7,7)])
-    # users[3].res_request([Resource(1,5), Resource(14,4), Resource(26,6), Resource(30,4)])
-    
-    # users[0].res_request([Resource(4,3), Resource(11,9)])
-    # users[1].res_request([Resource(4,6), Resource(6,3), Resource(11,2), Resource(14,10)])
-    # users[2].res_request([Resource(4,9), Resource(11,1), Resource(14,9)])
+        user.res_request(req_list);
        
     return users
                         
@@ -256,35 +225,23 @@ def main():
     user_num = int(random() * 30) + 1
     available_res = unique_list(resource_num)  # this one
     user_list = unique_list(user_num) # this one
-    
-    # Delete This    
-    # available_res = [4, 6, 11, 14]
-    # user_list = [10, 14, 15]
-    # available_res = [1, 4, 7, 10, 11, 12, 14, 26, 27, 30]
-    # user_list = [3, 5, 26, 30]
-    
     users = user_array(user_list, available_res)
     sim = Simulation(available_res, users)
     
     while len(sim.process()):
-        sleep(0.5)        
+        # sleep(0.5)        
         system('cls')
         
         sim.status()
-        # sim.update_queue() # Original
-        # input("Press Enter to continue")
+        input("Press Enter to continue")
         for (user, res) in list(sim.process().items()):
-            res.decrement()
-            sim.update_queue(res) 
             if res.is_done():
                 sim.remove(user)
                 sim.initialize(users)
-            # else:                
-            #     res.decrement()
-            #     sim.update_queue(res) # Original
+            else:                
+                res.decrement()
         sim.time_up()    
-        # print("\nQUEUE:", sim.queue())
-        # print("PROCESSES: ", sim.process())
+        sim.update_queue()
          
     system('cls')
     sim.status()
