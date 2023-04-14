@@ -157,10 +157,21 @@ def user_array(user_list, res):
     #     # print("REQUEST LIST: ", req_list)
     #     print()  
     
-    users[0].res_request([Resource(5,5), Resource(8,10), Resource(30,15)])
-    users[1].res_request([Resource(5,5), Resource(7,6), Resource(8,7)])
-    users[2].res_request([Resource(5,8), Resource(30,5), Resource(25,4)])
-    users[3].res_request([Resource(25,10)])
+    users[0].res_request([Resource(6,6)])
+    users[1].res_request([Resource(15,4)])
+    users[2].res_request([Resource(12,7)])
+    users[3].res_request([Resource(6,3), Resource(12,4), Resource(15,1)])
+    users[4].res_request([Resource(15,7)])
+    users[5].res_request([Resource(6,1), Resource(12,1), Resource(27,2)])
+    users[6].res_request([Resource(6,2)])
+    users[7].res_request([Resource(27,5)])
+    users[8].res_request([Resource(12,2), Resource(15,9)])
+    users[9].res_request([Resource(12,9)])
+    
+    # users[0].res_request([Resource(5,5), Resource(8,10), Resource(30,15)])
+    # users[1].res_request([Resource(5,5), Resource(7,6), Resource(8,7)])
+    # users[2].res_request([Resource(5,8), Resource(30,5), Resource(25,4)])
+    # users[3].res_request([Resource(25,10)])
         
     return users
     
@@ -183,9 +194,12 @@ def main():
     user_num = 5
     # user_num = randint(1, 10) # this one
     # user_num = randint(1, 30)
-    available_res = [5, 7, 8, 25, 30]
+    # available_res = [5, 7, 8, 25, 30]
     # available_res = unique_list(resource_num)  # this one
-    user_list = [5, 9, 11, 23]
+    # user_list = [5, 9, 11, 23]
+    available_res = [6, 12, 15, 27]
+    # available_res = unique_list(resource_num)  # this one
+    user_list = [3, 4, 9, 14, 20, 21, 23, 25, 26, 27]
     # user_list = unique_list(user_num) # this one
     # user_list = list(map(User,unique_list(user_num)))  
     users = user_array(user_list, available_res)

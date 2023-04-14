@@ -15,19 +15,18 @@ class Resource:
         return self.__time == 0
     
     def __repr__(self):
-        return 'R%d, Time: (%d s)' % (self.id, self.__time) if not self.is_done() else 'R%d Complete!' % self.id
-    
-    # def __repr__(self):
-    #     return 'R%d, Time: (%d s)' % (self.id, self.__time)
+        return 'R%d, Time: (%d s)' % (self.id, self.__time)
     
 class User:
     def __init__(self, id):
         self.id = id
         self.__res_list = []
     
+    # def is_complete(self):
+    #     return False if self.__res_list else True
+    
     def is_complete(self):
         return not self.curr_req()
-        # return False if self.__res_list else True
     
     def req_list(self):
         return self.__res_list
@@ -35,18 +34,17 @@ class User:
     def res_request(self, l):
         self.__res_list = l
     
+    # def curr_req(self):
+    #     return self.__res_list[0]
+    
     def curr_req(self):
         for res in self.__res_list:
             if not res.is_done():
                 return res
         return None
-        # return self.__res_list[0]
     
-    def dump_req(self):
-        self.__res_list = self.__res_list[1:]
-
-    def show_req(self):
-        return [str(req) for req in self.__res_list]
+    # def dump_req(self):
+        # self.__res_list = self.__res_list[1:]
 
     def display(self):
         return 'U%d\n|-- Requests: ' % self.id + '{0}'.format(self.__res_list) if len(self.__res_list) > 0 else ''
@@ -78,16 +76,15 @@ class Queue:
     def dequeue(self,req_id, curr_user):
         curr_req = self.__queue[req_id]
         if len(curr_req):
-            (first_item_key, _), = curr_req[0].items()
+            (first_item_key, first_item_value), = curr_req[0].items()
             if first_item_key.id == curr_user.id:
                 self.__queue[req_id] = self.__queue[req_id][1:]
         
     def update(self):
-        for (_, items) in self.__queue.items():
+        for (res_id, items) in self.__queue.items():
             for item in items:
-                (_, item_value), = item.items()
-                if item_value.time() >= 0:
-                    item_value.decrement()
+                (item_key, item_value), = item.items()
+                item_value.decrement()
 
     def last_queue(self, res_id = None):
         if len(self.__queue[res_id]) == 0:
@@ -96,18 +93,13 @@ class Queue:
             return self.__queue[res_id][-1]
     
     def in_queue(self, curr_user):
+        # print("CURRENT Q:",self.__queue)
         for (req,user_list) in self.__queue.items():   
             for user_dict in user_list:
-                (user_key, _), = user_dict.items()
+                (user_key, user_value), = user_dict.items()
                 if user_key.id == curr_user.id:
                     return True
         return False
-    
-    def is_empty(self):
-        for user in self.__queue.values():
-            if len(user):
-                return False
-        return True
     
     def __repr__(self):
         return '%s' % self.__queue
@@ -138,7 +130,7 @@ class Simulation:
         self.__clock += 1
 
     def queue(self):
-        return self.__queue.queue()
+        return self.__queue
     
     def process(self):
         return self.__process
@@ -152,6 +144,21 @@ class Simulation:
 
     def add_queue(self, curr_res, curr_user):
         self.__queue.enqueue(self.__process, curr_res, curr_user)
+        # timeLeft = 0
+        # queuedItem = self.__queue[curr_res.id]
+        
+        # if len(queuedItem) == 0:
+        #     for (user_id, res) in self.__process.items():
+        #         if curr_res.id == res.id:
+        #             timeLeft += res.time();
+        # else:
+        #     print("KEYS: ",queuedItem.keys())
+        #     last_key = list(queuedItem.keys())[-1]
+        #     print("LAST KEY: ",queuedItem[last_key], "TYPE:",type(last_key))
+        #     timeLeft += self._getTime(last_key, curr_res.id)
+        #     timeLeft += queuedItem[last_key]
+        
+        # self.__queue[curr_res.id][curr_user] = timeLeft
     
     def update_queue(self):
         self.__queue.update()
@@ -167,29 +174,32 @@ class Simulation:
     
     def delete(self, req_id, curr_user):
         self.__queue.dequeue(req_id, curr_user)
+        return
+        curr_req = self.__queue[req_id]
+        if len(curr_req):
+            first_key = next(iter(curr_req))
+            if first_key.id == curr_user.id:
+                self.__queue[req_id].pop(first_key)
+                # self.__queue[req_id] = curr_req[1:]
     
+    # def in_queue(self, curr_user):
+    #     for (req,user_list) in self.__queue.items():         
+    #         if any(1 if curr_user.id == user.id else 0 for (user, time) in user_list.items()):
+    #             return True
+    #     return False    
     def in_queue(self,  user):
         self.__queue.in_queue(user)
         
     def status(self):
-        print("TIME ELAPSED: %ds\n" % self.time())        
-        print("\n"+30*"="+" CURRENT PROCESSES "+30*"=")
         for user in self.__users:
-            print("User %d (U%d) Requests:\n%s\n" % (user.id, user.id, ' --- '.join(user.show_req()).ljust(10) if len(user.req_list()) > 0 else 'No Requests Left!'))
-        
-        print(30*"="+" QUEUE/IN WAITING "+30*"=")
-        
-        if self.__queue.is_empty():
-            print("No Users Waiting!")
-            return
-        
-        for (res_id, user_list) in self.queue().items():
-            if len(user_list) > 0:
-                print("Resource %d (R%d):" % (res_id, res_id))
-                for item in user_list:
-                    (user, res), = item.items()
-                    print("\tUser %d (Time Left: %ds)" % (user.id, res.time()))
-                print()
+            print("U%d Requests:\n%s" % (user.id, user.req_list() if len(user.req_list()) > 0 else 'No Requests Left!'))
+
+    def _getTime(self,user, res_id):
+        req_list = user.req_list();
+        for req in req_list:
+            if req.id == res_id:
+                return req.time()
+        return 0;
 
 class Display:
     def __init__(self, res_list, user_list):
@@ -297,13 +307,14 @@ def main():
     
     # while sim.time() < 5:
     while len(sim.process()):
-        # print("TIME ELAPSED: %ds" % sim.time())
+        print("TIME ELAPSED: %ds" % sim.time())
         print("\nQUEUE:", sim.queue())
-        # print("PROCESSES: ", sim.process())
-        # print()
+        print("PROCESSES: ", sim.process())
+        print()
         input("Press Enter to continue")
-        # print("\n\nSTATUS: ")
+        print("\n\nSTATUS: ")
         sim.status()
+        sim.update_queue()
         for (user, res) in list(sim.process().items()):
             # print(user.display())
             if res.is_done():
@@ -316,7 +327,6 @@ def main():
             # sim.status()
             # print(user,": ", res, sep="")
         
-        sim.update_queue()
         sim.time_up()    
         
     sim.status()
